@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pencil Sketch</title>
+  <style>
+    *{
+      margin:0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at center, #222, #000);
+      overflow: hidden;
+      font-family: 'Poppins', sans-serif;
+    }
+    #defaultCanvas0 {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      /* border-radius: 12px; */
+      box-shadow: 0 0 40px rgba(255,255,255,0.1);
+    }
+    .signature {
+      position: absolute;
+      bottom: 20px;
+      right: 30px;
+      color: #00ffff;
+      font-size: 18px;
+      letter-spacing: 1px;
+      /* text-shadow: 0 0 10px #00ffff; */
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"></script>
+  <script>
+    let img;
+    let sketchPoints = [];
+    let revealSpeed = 150;  // how many strokes per frame
+    let brushSize = 2;      // pencil stroke size
+
+    function preload() {
+      img = loadImage("goku.jpg"); // your image file
+    }
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      imageMode(CENTER);
+      img.resize(windowWidth * 0.8, 0);
+      img.filter(GRAY);
+      img.loadPixels();
+
+      noStroke();
+      frameRate(60);
+      background(0);
+
+      // collect pixel data
+      for (let y = 0; y < img.height; y += brushSize * 2) {
+        for (let x = 0; x < img.width; x += brushSize * 2) {
+          let index = (x + y * img.width) * 4;
+          let b = img.pixels[index]; // grayscale (r=g=b)
+          if (b < 200) { // darker areas = visible strokes
+            sketchPoints.push({x, y, bright: b});
+          }
+        }
+      }
+
+      shuffle(sketchPoints, true);
+    }
+
+    function draw() {
+      translate(width / 2 - img.width / 2, height / 2 - img.height / 2);
+
+      for (let i = 0; i < revealSpeed; i++) {
+        if (sketchPoints.length > 0) {
+          let p = sketchPoints.pop();
+          let alpha = map(p.bright, 0, 255, 255, 30);
+          stroke(255, alpha);
+          strokeWeight(random(0.5, brushSize));
+          line(p.x + random(-1, 1), p.y + random(-1, 1),
+               p.x + random(-1, 1), p.y + random(-1, 1));
+        } else {
+          noLoop();
+          showSignature();
+          break;
+        }
+      }
+    }
+
+    function showSignature() {
+      let sig = document.createElement('div');
+      sig.className = 'signature';
+      sig.textContent = '✏️ Drawn by Mikey_Reddy';
+      document.body.appendChild(sig);
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+  </script>
+</body>
+</html>
