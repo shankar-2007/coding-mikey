@@ -1,0 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=Tilt+Neon:wght@400;700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: "Tilt Neon", sans-serif;
+  background: #000;
+  touch-action: pan-y;
+  
+}
+
+.hero-section {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: #111;
+  text-shadow: 0 0 10px #00b3ff, 0 0 20px #00b3ff;
+  overflow: hidden;
+}
+
+.hero-section h1 {
+  font: 40px "Tilt Neon", sans-serif; 
+  color: #fff;
+}
+
+.trail-img {
+  position: absolute;
+  object-fit: cover;
+  transform-origin: center;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 12;
+}
+
+.trail-image {
+  position: absolute;
+  overflow: hidden;
+  will-change: transform;
+  transform-origin: center;
+  backface-visibility: hidden;
+  z-index: 12;
+}
