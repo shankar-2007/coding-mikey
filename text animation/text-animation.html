@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Animation</title>
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #343F4F;
+    }
+
+    .wrapper {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .static-text {
+      color: #fff;
+      font-size: 80px;
+      font-weight: 500;
+    }
+
+    .dynamic-text {
+      margin-left: 15px;
+      height: 100px;
+      line-height: 100px;
+      overflow: hidden;
+    }
+
+    .dynamic-text li {
+      color: #FC6D6D;
+      list-style: none;
+      font-size: 80px;
+      font-weight: 500;
+      position: relative;
+      top: 0;
+      animation: slide 6s steps(3) infinite;
+    }
+
+    @keyframes slide {
+      100% {
+        top: -350px; /* 100px height × 3 words */
+      }
+    }
+
+    .dynamic-text li span {
+      position: relative;
+      display: inline-block;
+      padding-right: 10px;
+    }
+
+    .dynamic-text li span::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: #343F4F;
+      border-left: 3px solid #FC6D6D;
+      animation: typing 2s steps(10) infinite;
+    }
+
+    @keyframes typing {
+      100% {
+        left: 100%;
+        margin: 0 -25px 0 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="static-text">I'm a</div>
+    <ul class="dynamic-text">
+      <li><span>Developer</span></li>
+      <li><span>Coder</span></li>
+      <li><span>Freelancer</span></li>
+    </ul>
+  </div>
+</body>
+</html>

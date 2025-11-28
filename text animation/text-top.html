@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>text-animation</title>
+</head>
+<body>
+    <style>
+         /* Base reset and font */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #343F4F;
+      font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans";
+    }
+
+    /* Layout */
+    .wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .static-text {
+      color: #fff;
+      font-weight: 400;
+      font-size: clamp(28px, 6vw, 60px);
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    .dynamic-text {
+      list-style: none;
+      margin: 0;
+      height: 90px;            
+      line-height: 90px;       
+      overflow: hidden;        
+      border-radius: 8px;
+      position: relative;
+
+    }
+
+    .dynamic-text li {
+      color: #FC6D6D;
+      font-size: clamp(26px, 6vw, 60px);
+      font-weight: 500;
+      position: relative;
+      height: 90px;
+      line-height: 90px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      animation: slide 5s steps(4) infinite;
+    }
+
+    @keyframes slide {
+      100% { transform: translateY(-360px); }
+    }
+
+    .dynamic-text li span {
+      position: relative;
+      display: inline-block;
+      padding-right: 0.4em; 
+    }
+
+    </style>
+    <div class="wrapper">
+        <div class="static-text">I'm a</div>
+        <ul class="dynamic-text" aria-live="polite">
+            <li><span>Developer</span></li>
+            <li><span>Coder</span></li>
+            <li><span>Freelancer</span></li>
+            <li><span>Designer</span></li>
+        </ul>
+  </div>
+</body>
+</html>

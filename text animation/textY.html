@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multiple Text Typing Animation</title>
+
+  <!-- Google Font: Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Base reset and font */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #343F4F;
+      font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans";
+    }
+
+    /* Layout */
+    .wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .static-text {
+      color: #fff;
+      font-weight: 400;
+      font-size: clamp(28px, 6vw, 60px);
+      white-space: nowrap;
+      line-height: 1.2;
+      text-shadow: 0 0 5px #fff;
+    }
+
+    /* Animated list viewport */
+    .dynamic-text {
+      list-style: none;
+      margin: 0;
+      /* padding: 0 0px 0px;  right pad so cursor has room to sweep */
+      height: 90px;            /* one line tall for the viewport */
+      line-height: 90px;       /* match li line height */
+      overflow: hidden;        /*hide the sliding lines/*
+      /* border: 2px solid #FC6D6D; */
+      border-radius: 8px;
+      position: relative;
+      /* snaps per item */
+    }
+
+    .dynamic-text li {
+      color: #FC6D6D;
+      text-shadow: 0 0 5px #FC6D6D;
+      font-size: clamp(26px, 6vw, 60px);
+      font-weight: 500;
+      position: relative;
+      height: 90px;
+      line-height: 90px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      animation: slide 9s steps(3) infinite;
+    }
+
+    /* Slide the stack upward by N * itemHeight (N=4 -> 360px) */
+    @keyframes slide {
+      100% { transform: translateY(-270px); }
+    }
+
+    /* Span holds the typing mask/caret */
+    .dynamic-text li span {
+      position: relative;
+      display: inline-block;
+      /* padding-right: 0.4em; space before caret */
+    }
+
+    /* Typing effect: mask the text and move caret with steps() */
+    .dynamic-text li span::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;                      /* cover whole word */
+      background: #343F4F;              /* same as page bg to mask */  /* caret */
+      /* border-left: 2px solid #FC6D6D; */
+      animation: typing 3s steps(10) infinite;
+    }
+
+    /* Erase-back pattern (forward then reset), as per common tutorial variant */
+    @keyframes typing {
+      40%, 60% { left: calc(100% + 30px); }
+      100%     { left: 0; }
+    }
+
+    /* Reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .dynamic-text,
+      .dynamic-text li span::after {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- <div class="static-text">Data</div> -->
+    <ul class="dynamic-text" aria-live="polite">
+      <li><span>Analyst</span></li>
+      <li><span>Science</span></li>
+      <li><span>engineer</span></li>
+    </ul>
+  </div>
+</body>
+</html>
