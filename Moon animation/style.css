@@ -1,0 +1,48 @@
+*{
+    margin: 0;
+    padding:0;
+    box-sizing: border-box;
+}
+
+body{
+    background-color: black;
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+}
+
+.moon{
+    background-color: black;
+    height: 350px;
+    width: 350px;
+    border-radius: 50%;
+    position: relative;
+}
+
+.moon::before{
+    content:"";
+    background-color: #ffff;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    display: block;
+    border-radius: 50%;
+    z-index: -1;
+    animation: 3.2s animation linear infinite alternate;
+}
+
+@keyframes animation{
+    0%{
+        transform: translateX(40px) scale(0.9);
+        box-shadow: none;
+    }
+    50%{
+        transform: translate(0px,0px) scale(1.02);
+        box-shadow: 0 0 30px #ffff;
+    }
+    100%{
+        transform: translate(-40px) scale(0.9);
+        box-shadow: none;
+    }
+}

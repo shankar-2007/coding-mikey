@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Hand Particle | mikey_reddy</title>
+
+<style>
+  :root { --bg:#000; --ui-bg: rgba(255,255,255,0.06); }
+  html,body{height:100%;margin:0;background:var(--bg);overflow:hidden;font-family:Inter,system-ui,Arial;}
+  canvas{display:block;width:100vw;height:100vh;background:transparent;}
+  #ui{
+    position:fixed; right:16px; top:16px; z-index:40;
+    display:flex; gap:8px; align-items:center;
+  }
+  button{
+    background:var(--ui-bg); color:#fff; border:1px solid rgba(255,255,255,0.08);
+    padding:8px 12px; border-radius:8px; cursor:pointer;
+  }
+  .hint{ color:rgba(255,255,255,0.7); font-size:13px; padding:8px 10px; border-radius:8px;}
+  #camWrap{ position:fixed; left:16px; top:16px; z-index:39; display:flex; gap:8px; align-items:center; }
+  video#input_video{ width:160px; height:120px; border-radius:8px; transform:scaleX(-1); object-fit:cover; display:none; border:2px solid rgba(255,255,255,0.06);}
+  #statusDot{ width:12px; height:12px; border-radius:50%; background:rgba(255, 0, 0, 0.95); box-shadow:0 0 14px rgba(0,200,255,0.28); display:inline-block; margin-left:8px; }
+  #cursor{ position:fixed; width:16px; height:16px; border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); z-index:45; mix-blend-mode:screen; box-shadow:0 0 18px rgba(0,200,255,0.9), 0 0 40px rgba(0,120,255,0.12); display:none;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <button id="toggleHand">Enable Hand Control</button>
+  <div class="hint" id="hintText">mikey_reddy Active</div>
+</div>
+
+<div id="camWrap">
+  <video id="input_video" autoplay muted playsinline></video>
+</div>
+
+<div id="cursor"></div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<script>
+(() => {
+  // Canvas setup
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  let W = canvas.width = innerWidth;
+  let H = canvas.height = innerHeight;
+
+  // Particle system params (tweakable)
+  const NUM = Math.max(220, Math.floor((W*H)/2000)); // density scaled
+  const particles = [];
+  const pointer = { x: W/2, y: H/2 };
+  const cursorEl = document.getElementById('cursor');
+
+  // Hand control state
+  let useHand = false;
+  let handDetected = false;
+  let camera = null;
+  const videoEl = document.getElementById('input_video');
+  const toggleBtn = document.getElementById('toggleHand');
+  const hintText = document.getElementById('hintText');
+
+  // Utility: distance
+  function dist(a,b,c,d){ const dx=a-c, dy=b-d; return Math.sqrt(dx*dx+dy*dy); }
+
+  // Particle class
+  class P {
+    constructor(){
+      this.x = Math.random()*W;
+      this.y = Math.random()*H;
+      this.initX = this.x;
+      this.initY = this.y;
+      this.vx = (Math.random()-0.5) * 0.3; // very slow drift
+      this.vy = (Math.random()-0.5) * 0.3;
+      this.baseSize = 0.8 + Math.random()*2.2;
+      this.size = this.baseSize;
+      this.gather = 0; // 0..1 how much it's clustering
+      // random phase used for smooth local motion
+      this.phase = Math.random()*Math.PI*2;
+      // color variance
+      this.hueShift = Math.random()*20 - 10;
+      // return to init position
+      this.returning = false;
+      this.returnProgress = 0;
+      this.returnStartTime = 0;
+    }
+    update(dt, attractX, attractY, attractStrength, openFactor){
+      if(this.returning){
+        this.returnProgress += dt / 2000; // 2 seconds
+        if(this.returnProgress >= 1){
+          this.returnProgress = 1;
+          this.returning = false;
+          this.x = this.initX;
+          this.y = this.initY;
+        } else {
+          // lerp position
+          const t = this.returnProgress;
+          this.x = this.x + (this.initX - this.x) * t;
+          this.y = this.y + (this.initY - this.y) * t;
+        }
+        // still apply wandering and velocity decay
+        this.phase += 0.001 * dt;
+        const wanderX = Math.cos(this.phase*1.3 + this.hueShift) * 0.25;
+        const wanderY = Math.sin(this.phase*1.1 + this.hueShift) * 0.25;
+        this.vx *= 0.995;
+        this.vy *= 0.995;
+        this.vx += wanderX * 0.01;
+        this.vy += wanderY * 0.01;
+        this.x += this.vx * dt * 0.06;
+        this.y += this.vy * dt * 0.06;
+        // wrap around edges (so screen remains filled)
+        if(this.x < -30) this.x = W + 30;
+        if(this.x > W + 30) this.x = -30;
+        if(this.y < -30) this.y = H + 30;
+        if(this.y > H + 30) this.y = -30;
+        return; // skip normal update
+      }
+
+      // openFactor ~ 0 (fist) to 1 (open). We want stronger attraction on fist (openFactor low)
+      const gatherTarget = (1 - openFactor) * attractStrength; // [0..]
+      // Smoothly approach gather (how attracted the particle is)
+      this.gather += (gatherTarget - this.gather) * Math.min(0.08 * dt, 1);
+
+      // small natural wandering using phase and time
+      this.phase += 0.001 * dt;
+      const wanderX = Math.cos(this.phase*1.3 + this.hueShift) * 0.25;
+      const wanderY = Math.sin(this.phase*1.1 + this.hueShift) * 0.25;
+
+      // base velocity slightly decays to keep it slow
+      this.vx *= 0.995;
+      this.vy *= 0.995;
+      this.vx += wanderX * 0.01;
+      this.vy += wanderY * 0.01;
+
+      // If gather active, apply attraction toward attractX,attractY
+      if(this.gather > 0.001){
+        const dx = attractX - this.x;
+        const dy = attractY - this.y;
+        const d = Math.sqrt(dx*dx + dy*dy) + 0.0001;
+        // attraction force proportional to gather and inversely to distance (so distant ones move slowly)
+        const f = (this.gather * 0.08) * (1 / (0.6 + d*0.002));
+        this.vx += (dx/d) * f * dt * 0.04;
+        this.vy += (dy/d) * f * dt * 0.04;
+        // when gathering, reduce jitter so they clump smoothly
+        this.vx *= 0.995;
+        this.vy *= 0.995;
+        // also slightly shrink size as they cluster (visual)
+        this.size += ((this.baseSize*0.6) - this.size) * 0.06;
+      } else {
+        // relax size back to base
+        this.size += (this.baseSize - this.size) * 0.04;
+      }
+
+      // Position update
+      this.x += this.vx * dt * 0.06;
+      this.y += this.vy * dt * 0.06;
+
+      // wrap around edges (so screen remains filled)
+      if(this.x < -30) this.x = W + 30;
+      if(this.x > W + 30) this.x = -30;
+      if(this.y < -30) this.y = H + 30;
+      if(this.y > H + 30) this.y = -30;
+    }
+
+    draw(ctx){
+      // soft glow
+      const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, Math.max(8, this.size*10));
+      grd.addColorStop(0, `rgba(200,245,255,0.95)`);
+      grd.addColorStop(0.08, `rgba(0,220,255,0.85)`);
+      grd.addColorStop(0.2, `rgba(0,140,255,0.22)`);
+      grd.addColorStop(1, `rgba(0,0,0,0)`);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, Math.max(1.2, this.size*6), 0, Math.PI*2);
+      ctx.fill();
+
+      // add a tiny streak to give "particle" sense (subtle)
+      ctx.beginPath();
+      ctx.moveTo(this.x - this.vx*12, this.y - this.vy*12);
+      ctx.lineTo(this.x, this.y);
+      ctx.strokeStyle = `rgba(0,210,255,0.12)`;
+      ctx.lineWidth = Math.max(1, this.size*0.8);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+  }
+
+  // Initialize
+  for(let i=0;i<NUM;i++) particles.push(new P());
+
+  // Handle resize
+  window.addEventListener('resize', ()=>{
+    W = canvas.width = innerWidth;
+    H = canvas.height = innerHeight;
+  });
+
+  // Mouse fallback pointer
+  let lastTime = performance.now();
+  let openFactor = 1.0; // 1 = open (no gather), 0 = fist (full gather)
+  let measuredOpen = 1.0;
+
+  canvas.addEventListener('mousemove', (e)=>{
+    if(!useHand){
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      cursorEl.style.display = 'block';
+      cursorEl.style.left = pointer.x + 'px';
+      cursorEl.style.top = pointer.y + 'px';
+    }
+  });
+  canvas.addEventListener('mouseleave', ()=>{ if(!useHand) cursorEl.style.display = 'none'; });
+  canvas.addEventListener('mouseenter', ()=>{ if(!useHand) cursorEl.style.display = 'block'; });
+
+  // Animation loop
+  function loop(now){
+    const dt = Math.min(33, now - lastTime);
+    lastTime = now;
+
+    // fade background a bit to create glow persistence
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(0,0,W,H);
+
+    // subtle navy-blue vignette for cinematic look
+    const v = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)/1.2);
+    v.addColorStop(0, 'rgba(0,20,40,0.02)');
+    v.addColorStop(1, 'rgba(0,0,0,0.6)');
+    ctx.fillStyle = v;
+    ctx.fillRect(0,0,W,H);
+
+    // determine attract strength and position
+    let attractStrength = 1.0; // base scale; higher -> faster gather
+    let attractX = pointer.x;
+    let attractY = pointer.y;
+
+    // update openFactor smoothly from measuredOpen (measured by hand detection)
+    openFactor += (measuredOpen - openFactor) * 0.08;
+
+    // update + draw particles
+    for(let p of particles){
+      p.update(dt, attractX, attractY, attractStrength, openFactor);
+      p.draw(ctx);
+    }
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---------------------- MediaPipe Hands ----------------------
+  const hands = new Hands({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.55,
+    minTrackingConfidence: 0.5
+  });
+
+  hands.onResults((results) => {
+    if(!useHand) return;
+    if(results.multiHandLandmarks && results.multiHandLandmarks.length > 0){
+      handDetected = true;
+      // Reset returning for all particles when hand is detected again
+      for(let p of particles){
+        if(p.returning){
+          p.returning = false;
+          p.returnProgress = 0;
+        }
+      }
+      const lm = results.multiHandLandmarks[0];
+
+      // index tip (8) coordinate normalized (0..1). MediaPipe provides mirrored for webcam? We used mirrored video CSS.
+      const tipIndex = lm[8];
+      // Map normalized to canvas coordinates (no need to use video bounds because we want full-window mapping)
+      pointer.x = (1 - tipIndex.x) * W; // mirror horizontally so it feels natural
+      pointer.y = tipIndex.y * H;
+      cursorEl.style.display = 'block';
+      cursorEl.style.left = pointer.x + 'px';
+      cursorEl.style.top = pointer.y + 'px';
+
+      // Determine "open vs closed" (simple heuristic):
+      // Compute average distance of fingertips (8,12,16,20) to wrist (0), normalized by hand size.
+      const wrist = lm[0];
+      const thumbTip = lm[4];
+      const fingerTips = [lm[8], lm[12], lm[16], lm[20]];
+      // hand size baseline: distance wrist to middle finger mcp (9) or to middle tip
+      const refDist = dist(wrist.x, wrist.y, lm[9].x, lm[9].y) + 0.0001;
+
+      let avgTipDist = 0;
+      for(const f of fingerTips){
+        avgTipDist += dist(wrist.x, wrist.y, f.x, f.y);
+      }
+      avgTipDist /= fingerTips.length;
+
+      // Normalize: larger avgTipDist => open hand. Smaller => fist.
+      // We map normalizedOpen in [0..1]
+      let normalized = (avgTipDist / refDist); // typical open values ~ 2.0-3.5, closed ~ 0.6-1.3
+      // clamp and remap to 0..1
+      // we map 0.7 -> 0 (closed), 2.6 -> 1 (open)
+      const minV = 0.7, maxV = 2.6;
+      normalized = (normalized - minV) / (maxV - minV);
+      normalized = Math.max(0, Math.min(1, normalized));
+
+      measuredOpen = normalized; // 1 open, 0 closed
+
+      // OPTIONAL: detect pinch (thumb-index) for alternate interaction
+      const pinchDist = dist(thumbTip.x, thumbTip.y, lm[8].x, lm[8].y) / refDist;
+      // If pinch very small, you could create a stronger attract or special effect (not used now)
+    } else {
+      if(handDetected){
+        // Hand was detected, now lost - start return
+        for(let p of particles){
+          if(!p.returning){
+            p.returning = true;
+            p.returnProgress = 0;
+          }
+        }
+      }
+      handDetected = false;
+      // no hand found -> slowly fallback to open (spread)
+      measuredOpen += (1.0 - measuredOpen) * 0.04;
+    }
+  });
+
+  // Camera start/stop
+  async function startCamera(){
+    try {
+      // videoEl.style.display = 'block'; // Removed to keep camera hidden
+      camera = new Camera(videoEl, {
+        onFrame: async () => { await hands.send({ image: videoEl }); },
+        width: 320,
+        height: 240
+      });
+      await camera.start();
+      hintText.textContent = 'Hand control active — move your hand. with mikey_reddy';
+    } catch(e){
+      console.error('camera error', e);
+      hintText.textContent = 'Camera unavailable — mikey_reddy';
+      stopHand();
+    }
+  }
+  function stopHand(){
+    useHand = false;
+    toggleBtn.textContent = 'Enable Hand Control';
+    videoEl.style.display = 'none';
+    cursorEl.style.display = 'none';
+    hintText.textContent = 'mikey_reddy mouse active';
+    measuredOpen = 1.0;
+    if(camera && camera.stop) try{ camera.stop(); } catch(e){}
+  }
+  toggleBtn.addEventListener('click', async () => {
+    if(!useHand){
+      useHand = true;
+      toggleBtn.textContent = 'Disable Hand Control';
+      hintText.textContent = 'Starting camera... with mikey_reddy';
+      await startCamera();
+    } else {
+      stopHand();
+    }
+  });
+
+  // Touch support: tap to place pointer
+  document.addEventListener('touchstart', (e) => {
+    if(!useHand && e.touches && e.touches[0]){
+      pointer.x = e.touches[0].clientX;
+      pointer.y = e.touches[0].clientY;
+      cursorEl.style.left = pointer.x + 'px';
+      cursorEl.style.top = pointer.y + 'px';
+      cursorEl.style.display = 'block';
+    }
+  });
+
+  // Initial small render to avoid blackness
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+
+  // Politeness: in some browsers video needs user gesture to start camera — toggle button provides it.
+
+})();
+</script>
+</body>
+</html>
