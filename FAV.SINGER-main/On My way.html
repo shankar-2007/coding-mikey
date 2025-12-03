@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Music Player UI | mikey reddy</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+
+  /* Fullscreen background video */
+#bgVideo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+/* Page content styling */
+.content {
+  position: relative;
+  z-index: 10;
+  color: white;
+  text-align: center;
+  margin-top: 50px;
+  font-family: Arial, sans-serif;
+}
+
+
+  .main-card {
+    width: 90%;
+    max-width: 360px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(16px);
+    margin: 20px auto;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 0 30px rgba(255,255,255,0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .video-card {
+    width: 100%;
+    height: 300px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .video-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .info-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .info-row img {
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+
+  .song-text {
+    flex: 1;
+    color: #fff;
+  }
+
+  .song-title {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .song-artist {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .top-icons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .top-icons button {
+    width: 30px;
+    height: 30px;
+    background: rgba(0,0,0,0.35);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #fff;
+    border-radius: 10px;
+  }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #fff;
+    opacity: 0.8;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 6px;
+  }
+
+  .controls button {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+  }
+
+  .big-play {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border-radius: 50%;
+    color: #000;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  /* Footer buttons */
+  .footer-buttons {
+    width: 90%;
+    max-width: 360px;
+    margin: 10px auto 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .back-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.034);
+    backdrop-filter: blur(2px);
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    color: #fff;
+    cursor: pointer;
+    width: 30%;
+    text-align: center;
+  }
+
+  .back-btn:hover {
+    transform: translateY(-5px);
+    background-color: #757575;
+  }
+
+  .right-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 10px;
+    pointer-events: auto;
+  }
+
+  .right-links a {
+    color: white;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: bold;
+    transition: 0.25s ease;
+  }
+
+  .right-links a:hover {
+    opacity: 0.7;
+    transform: translateX(-3px);
+  }
+
+  /* Swap Hello & Prince vertical order */
+  .right-links a:nth-child(1) {
+    order: 2;
+  }
+  .right-links a:nth-child(2) {
+    order: 1;
+  }
+
+  /* MOBILE */
+  @media (max-width: 480px) {
+    .main-card {
+      max-width: 70vw;
+      max-height: 350px;
+      padding: 14px;
+      gap: 14px;
+      margin-bottom: 10%;
+    }
+
+    .video-card {
+      height: 350px;
+    }
+
+    .info-row img {
+      width: 48px;
+      height: 48px;
+    }
+
+    .controls {
+      margin-top: -50px;
+    }
+
+    .song-title { font-size: 16px; }
+    .song-artist { font-size: 13px; }
+
+    .big-play {
+      width: 52px;
+      height: 52px;
+      font-size: 28px;
+    }
+
+    .back-btn {
+      margin-left: 15px;
+      margin-bottom: 15px;
+    }
+
+    /* Ensure Hello/Prince remain stacked clearly */
+    .right-links a {
+      font-size: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Background Video -->
+<video autoplay muted loop id="bgVideo">
+  <source src="assets/gif3.mp4" type="video/mp4">
+</video>
+
+<div class="main-card">
+
+  <div class="video-card">
+    <video autoplay muted loop>
+      <source src="assets/video3.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <div class="info-row">
+    <img src="assets/1.jpg" />
+    <div class="song-text">
+      <div class="song-title">On My Way</div>
+      <div class="song-artist">Alan Walker</div>
+    </div>
+
+    <div class="top-icons">
+      <button id="closeBtn">×</button>
+      <button id="addBtn">+</button>
+    </div>
+  </div>
+
+  <div class="progress">
+    <div class="progress-fill" id="bar"></div>
+  </div>
+
+  <div class="time-row">
+    <span id="currentTime">0:00</span>
+    <span id="duration">0:00</span>
+  </div>
+
+  <div class="controls">
+    <button onclick="seek(-10)">«</button>
+    <button onclick="toggleMusic()" class="big-play">▶</button>
+    <button onclick="seek(10)">»</button>
+  </div>
+
+  <audio id="music-player">
+    <source src="assets/On My way.m4a" type="audio/mpeg" />
+  </audio>
+
+</div>
+
+<div class="footer-buttons">
+  <button class="back-btn" onclick="window.location.href='index.html'">Back</button>
+
+  <div class="right-links">
+    <a href="Lily-A.W.html">✦⬩➤ Lily - A|W</a>
+    <a href="Alone pt. II.html">✦⬩➤ Alone pt. II</a>
+  </div>
+</div>
+
+<script>
+  const music = document.getElementById('music-player');
+  const bar = document.getElementById('bar');
+  const currentTimeText = document.getElementById('currentTime');
+  const durationText = document.getElementById('duration');
+
+  music.onloadedmetadata = () => {
+    durationText.textContent = format(music.duration);
+  };
+
+  music.ontimeupdate = () => {
+    const percent = (music.currentTime / music.duration) * 100;
+    bar.style.width = percent + '%';
+    currentTimeText.textContent = format(music.currentTime);
+  };
+
+  function toggleMusic() {
+    if (music.paused) music.play();
+    else music.pause();
+  }
+
+  function seek(sec) {
+    music.currentTime += sec;
+  }
+
+  function format(time) {
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+</script>
+
+</body>
+</html>

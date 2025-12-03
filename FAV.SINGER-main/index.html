@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alan walker - musicplayer UI | Mikey reddy</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: url('assets/back.jpg') center/cover no-repeat;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+
+    .logo {
+      width: 150px;
+      height: 150px;
+      cursor: pointer;
+      transition: transform 0.4s ease;
+      animation: breathe 3s infinite ease-in-out;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    @keyframes breathe {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .menu-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      flex-direction: column;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s forwards ease-out;
+      background: rgba(0,0,0,0.45);
+      padding: 12px 20px;
+      border-radius: 50px;
+      backdrop-filter: blur(6px);
+    }
+
+    @keyframes fadeUp {
+      0% { opacity: 0; transform: translateY(25px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .circle-icon {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #111;
+      box-shadow: 0 0 10px rgba(255,0,120,0.6);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .circle-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .menu-button {
+      padding: 14px 30px;
+      border-radius: 40px;
+      border: none;
+      font-size: 20px;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      cursor: pointer;
+      min-width: 200px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    @media (max-width: 600px) {
+      .logo {
+        width: 90px;
+        height: 90px;
+      }
+      .circle-icon {
+        width: 50px;
+        height: 50px;
+      }
+      .menu-button {
+        font-size: 10px;
+        min-width: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <img src="assets/1.jpg" class="logo" id="logo" />
+
+  <a href="Alone pt. II.html"><div class="menu-container" id="menu">
+    <div class="menu-item" style="animation-delay:0.2s">
+      <div class="circle-icon"><img src="assets/1.jpg"></div>
+      <button class="menu-button" href='Alone pt. II.html'>Alone pt. II</button>
+    </div></a>
+
+    <a href="Lily-A.W.html"><div class="menu-item" style="animation-delay:0.4s">
+      <div class="circle-icon"><img src="assets/1.jpg"></div>
+      <button class="menu-button" href='Lily-A.W.html'>Lily-A/W</button>
+    </div></a>
+
+    <a href="On My way.html"><div class="menu-item" style="animation-delay:0.6s">
+      <div class="circle-icon"><img src="assets/1.jpg"></div>
+      <button class="menu-button" href='On My way.html'>On My way</button>
+    </div></a>
+  </div>
+
+  <script>
+    const logo = document.getElementById('logo');
+    const menu = document.getElementById('menu');
+
+    logo.addEventListener('click', () => {
+      logo.style.transform = 'scale(0.70) translateY(-140px)';
+      menu.style.display = 'flex';
+    });
+  </script>
+
+</body>
+</html>
